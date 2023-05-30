@@ -2,47 +2,55 @@
 
 
 from target_squarespace.client import SquarespaceSink
-
+from pendulum import parse
+from datetime import datetime
+from datetime import timezone
 
 class OrdersSink(SquarespaceSink):
     """Squarespace target sink class."""
 
-    name = "Orders"
+    name = "SalesOrders"
     endpoint = "/orders"
 
     def preprocess_record(self, record: dict, context: dict) -> dict:
+
+        shipDate = record.get("transaction_date")
+        if shipDate:
+            shipDate = datetime.strptime(shipDate, '%Y-%m-%dT%H:%M:%SZ')
+            shipDate = shipDate.replace(tzinfo=timezone.utc).timestamp()
+            shipDate = datetime.fromtimestamp(shipDate).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         
         payload = {
+            "shouldSendNotification": True,
+            "shipments": [
+                {       
+                    "carrierName": record.get("carrier"),
+                    "trackingNumber": record.get("tracking_number"),
+                    "shipDate": shipDate,
+                    "service": record.get("carrier")                   
+                }
+            ]
+        }
+
+        record = {
             "id": record.get("id"),
-            "order_number": record.get("order_number"),
-            "tracking_number": None,
-            "carrier": None,
-            "fulfilled": True,
-            "delivery_status": "delivered",
-            "status": "completed",
-            "transaction_date": record.get("transaction_date").strftime('%Y-%m-%dT%H:%M:%SZ')
+            "payload": payload
         }
         
-        return payload
+        return record
 
     def upsert_record(self, record: dict, context: dict) -> None:
         """Process the record."""
-        endpoint = f"/orders/{record.get('id')}/fulfillments"
+        id = record.get("id")
+        endpoint = f"/orders/{id}/fulfillments"
         state_updates = dict()
         if record:
             try:
-                payload = record.copy()
-                del payload["id"]
-                payload = {
-                        "SalesOrders": [
-                            payload
-                        ]
-                }
                 response = self.request_api(
-                    "POST", endpoint=endpoint, request_data=payload
+                    "POST", endpoint=endpoint, request_data=record.get("payload")
                 )
-                id = response.json()["id"]
-                self.logger.info(f"{self.name} created with id: {id}")
+                if response.status_code == 204:
+                    self.logger.info(f"Order No. {id} was fulfilled succesfully")
             except:
                 raise KeyError
             return id, True, state_updates

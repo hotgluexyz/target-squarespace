@@ -12,7 +12,7 @@ class SquarespaceSink(HotglueSink):
     def http_headers(self):
         token = self.config.get("api_key")
         auth_credentials = {
-            "Authorization": f"{token}"
+            "Authorization": f"Bearer {token}"
         }
         return auth_credentials
 

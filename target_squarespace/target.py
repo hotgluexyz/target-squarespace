@@ -4,6 +4,7 @@ from singer_sdk.target_base import Target
 from singer_sdk import typing as th
 
 from target_squarespace.sinks import (
+    ContactsSink,
     OrdersSink,
 )
 from target_hotglue.target import TargetHotglue
@@ -25,7 +26,7 @@ class TargetSquarespace(TargetHotglue):
         super().__init__(config, parse_env_config, validate_config)
 
 
-    SINK_TYPES = [OrdersSink]
+    SINK_TYPES = [OrdersSink, ContactsSink]
     MAX_PARALLELISM = 10
     name = "target-squarespace"
 

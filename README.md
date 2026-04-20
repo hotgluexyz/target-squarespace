@@ -14,26 +14,38 @@ pipx install target-squarespace
 
 ## Configuration
 
-### Accepted Config Options
+Two authentication methods are supported: **API Key** and **OAuth 2.0**. Use OAuth when you have a registered Squarespace API application; otherwise use an API key.
 
-- [ ] `Developer TODO:` Provide a list of config options accepted by the target.
+| Name | Required | Description | Example |
+|------|----------|-------------|---------|
+| `api_key` | Yes (API key auth) | Squarespace API key used to authenticate requests via Bearer token. Not required when using OAuth. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `client_id` | Yes (OAuth) | OAuth application client ID. When present, OAuth auth is used instead of API key. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `client_secret` | Yes (OAuth) | OAuth application client secret. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `refresh_token` | Yes (OAuth) | OAuth refresh token. Used to obtain a new access token automatically. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
+| `access_token` | No (OAuth) | Current OAuth access token. Written back to the config file after each refresh. | `xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx` |
 
-A full list of supported settings and capabilities for this
-target is available by running:
+### Example config — API key
 
-```bash
-target-squarespace --about
+```json
+{
+  "api_key": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
 ```
 
-### Configure using environment variables
+### Example config — OAuth
 
-This Singer target will automatically import any environment variables within the working directory's
-`.env` if the `--config=ENV` is provided, such that config values will be considered if a matching
-environment variable is set either in the terminal context or in the `.env` file.
+```json
+{
+  "client_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "client_secret": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "refresh_token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  "access_token": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+```
 
-### Source Authentication and Authorization
-
-- [ ] `Developer TODO:` If your target requires special access on the source system, or any special authentication requirements, provide those here.
+> **API key:** Generate one from your Squarespace account under **Settings → Advanced → API Keys**. Ensure the key has the Commerce (Orders) permission scope.
+>
+> **OAuth:** Register an application in the [Squarespace Developer Platform](https://developers.squarespace.com/). The target uses the refresh token grant to keep the access token up-to-date automatically, writing the new tokens back to the config file after each refresh.
 
 ## Usage
 

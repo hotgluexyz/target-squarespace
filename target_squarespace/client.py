@@ -1,21 +1,31 @@
-from target_hotglue.client import HotglueSink
 from datetime import datetime
+
 import backoff
 import requests
 from singer_sdk.exceptions import RetriableAPIError
+from target_hotglue.auth import ApiAuthenticator
+from target_hotglue.client import HotglueSink
+
+from target_squarespace.auth import SquarespaceOAuthAuthenticator
+
 
 class SquarespaceSink(HotglueSink):
 
     base_url = "https://api.squarespace.com/1.0/commerce"
 
     @property
-    def http_headers(self):
-        token = self.config.get("api_key")
-        auth_credentials = {
-            "Authorization": f"Bearer {token}"
-        }
-        return auth_credentials
-
+    def authenticator(self):
+        if not hasattr(self, "_authenticator"):
+            if self.config.get("client_id"):
+                self._authenticator = SquarespaceOAuthAuthenticator(self._target)
+            else:
+                self._authenticator = ApiAuthenticator(
+                    self._target,
+                    header_name="Authorization",
+                    header_value_prefix="Bearer ",
+                    config_key="api_key",
+                )
+        return self._authenticator
 
     @backoff.on_exception(
         backoff.expo,
@@ -24,18 +34,19 @@ class SquarespaceSink(HotglueSink):
         factor=2,
     )
     def _request(
-        self, http_method, endpoint, params=None, request_data=None, headers=None
+        self, http_method, endpoint, params=None, request_data=None, headers=None, verify=True
     ) -> requests.PreparedRequest:
         """Prepare a request object."""
         url = self.url(endpoint)
-        headers = self.http_headers
+        merged_headers = {**self.default_headers, **(headers or {})}
 
         response = requests.request(
             method=http_method,
             url=url,
             params=params,
-            headers=headers,
+            headers=merged_headers,
             json=request_data,
+            verify=verify,
         )
         self.validate_response(response)
         return response
@@ -50,5 +61,3 @@ class SquarespaceSink(HotglueSink):
             # This is the format -> "2022-08-15T19:16:35Z"
             return date.strftime("%Y-%m-%dT%H:%M:%SZ")
         return date
-    
-    

@@ -2,11 +2,9 @@ from datetime import datetime
 
 import backoff
 import requests
-from singer_sdk.exceptions import RetriableAPIError
-from target_hotglue.auth import ApiAuthenticator
-from target_hotglue.client import HotglueSink
-
-from target_squarespace.auth import SquarespaceOAuthAuthenticator
+from hotglue_singer_sdk.exceptions import RetriableAPIError
+from hotglue_singer_sdk.target_sdk.auth import ApiAuthenticator
+from hotglue_singer_sdk.target_sdk.client import HotglueSink
 
 
 class SquarespaceSink(HotglueSink):
@@ -17,7 +15,8 @@ class SquarespaceSink(HotglueSink):
     def authenticator(self):
         if not hasattr(self, "_authenticator"):
             if self.config.get("client_id"):
-                self._authenticator = SquarespaceOAuthAuthenticator(self._target)
+                authenticator, auth_endpoint = self._target.access_token_support(self._target)
+                self._authenticator = authenticator(self._target, auth_endpoint=auth_endpoint)
             else:
                 self._authenticator = ApiAuthenticator(
                     self._target,

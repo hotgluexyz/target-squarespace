@@ -5,6 +5,7 @@ from target_squarespace.sinks import ContactsSink
 
 def test_upsert_looks_up_and_updates_contact_by_email_without_id():
     sink = ContactsSink.__new__(ContactsSink)
+    sink.logger = Mock()
     query_response = Mock()
     query_response.json.return_value = {
         "contacts": [

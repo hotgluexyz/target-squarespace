@@ -189,6 +189,7 @@ class ContactsSink(SquarespaceSink):
         }
 
     def _find_contact_id_by_email(self, email: str) -> Optional[str]:
+        self.logger.debug("Looking up an existing Squarespace contact by email.")
         response = self.request_api(
             "POST",
             endpoint="/contacts/query",
@@ -197,7 +198,9 @@ class ContactsSink(SquarespaceSink):
         for contact in response.json().get("contacts", []):
             contact_email = (contact.get("primaryEmail") or {}).get("email")
             if contact_email and contact_email.lower() == email.lower():
+                self.logger.debug("Found an existing Squarespace contact by email.")
                 return contact.get("id")
+        self.logger.debug("No existing Squarespace contact found by email.")
         return None
 
     def preprocess_record(self, record: dict, context: dict) -> dict:

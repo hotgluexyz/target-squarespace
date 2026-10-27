@@ -17,7 +17,7 @@ class TargetSquarespace(TargetHotglue):
     SINK_TYPES = [OrdersSink, ContactsSink]
     MAX_PARALLELISM = 10
     name = "target-squarespace"
-    alerting_level = AlertingLevel.ERROR
+    alerting_level = AlertingLevel.WARNING
 
     config_jsonschema = th.PropertiesList(
         th.Property(

@@ -188,6 +188,21 @@ class ContactsSink(SquarespaceSink):
             "defaultShipping": True,
         }
 
+    def _find_contact_id_by_email(self, email: str) -> Optional[str]:
+        self.logger.debug("Looking up an existing Squarespace contact by email.")
+        response = self.request_api(
+            "POST",
+            endpoint="/contacts/query",
+            request_data={"searchString": email, "pageSize": 50},
+        )
+        for contact in response.json().get("contacts", []):
+            contact_email = (contact.get("primaryEmail") or {}).get("email")
+            if contact_email and contact_email.lower() == email.lower():
+                self.logger.debug("Found an existing Squarespace contact by email.")
+                return contact.get("id")
+        self.logger.debug("No existing Squarespace contact found by email.")
+        return None
+
     def preprocess_record(self, record: dict, context: dict) -> dict:
         if self.config.get("unified_schema", False):
             contact = Contact(**record)
@@ -230,6 +245,11 @@ class ContactsSink(SquarespaceSink):
     def upsert_record(self, record: dict, context: dict) -> None:
         squarespace_id = record.pop("_squarespace_id", None)
         address_book = record.pop("_address_book", None)
+
+        if not squarespace_id:
+            email = (record.get("primaryEmail") or {}).get("email")
+            if email:
+                squarespace_id = self._find_contact_id_by_email(email)
 
         response = None
         if squarespace_id:

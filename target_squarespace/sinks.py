@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from hotglue_models_crm.crm import Contact
-from singer_sdk.exceptions import FatalAPIError
+from hotglue_singer_sdk.exceptions import FatalAPIError
 from target_squarespace.client import SquarespaceSink
 
 # ISO 3166-1 alpha-3 -> alpha-2 for common three-letter codes.
@@ -158,14 +158,11 @@ class OrdersSink(SquarespaceSink):
         endpoint = f"/orders/{id}/fulfillments"
         state_updates = dict()
         if record:
-            try:
-                response = self.request_api(
-                    "POST", endpoint=endpoint, request_data=record.get("payload")
-                )
-                if response.status_code == 204:
-                    self.logger.info(f"Order No. {id} was fulfilled succesfully")
-            except:
-                raise KeyError
+            response = self.request_api(
+                "POST", endpoint=endpoint, request_data=record.get("payload")
+            )
+            if response.status_code == 204:
+                self.logger.info(f"Order No. {id} was fulfilled succesfully")
             return id, True, state_updates
 
 

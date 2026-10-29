@@ -19,10 +19,14 @@ class SquarespaceSink(HotglueSink):
             error = response.json()
         except ValueError:
             error = None
-        if isinstance(error, dict) and "contextId" in error:
-            error.pop("contextId")
-            error_message = json.dumps(error)
-        raise exception_class(error_message)
+        if isinstance(error, dict):
+            error.pop("contextId", None)
+            error_message = error.get("message") or json.dumps(error)
+        message = (
+            f"{response.status_code} Client Error: "
+            f"{response.reason} for path: {self.endpoint}"
+        )
+        raise exception_class(f'Msg {message}, response "{error_message}"')
 
     def validate_response(self, response: requests.Response) -> None:
         """Log client errors and exclude context IDs from the saved error."""

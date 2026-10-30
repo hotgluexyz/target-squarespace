@@ -1,8 +1,9 @@
+import json
 from datetime import datetime
 
 import backoff
 import requests
-from hotglue_singer_sdk.exceptions import RetriableAPIError
+from hotglue_singer_sdk.exceptions import FatalAPIError, RetriableAPIError
 from hotglue_singer_sdk.target_sdk.auth import ApiAuthenticator
 from hotglue_singer_sdk.target_sdk.client import HotglueSink
 
@@ -10,6 +11,28 @@ from hotglue_singer_sdk.target_sdk.client import HotglueSink
 class SquarespaceSink(HotglueSink):
 
     base_url = "https://api.squarespace.com/1.0/commerce"
+
+    def _log_and_raise(self, exception_class, response):
+        self.logger.info(f"Response code: {response.status_code}, info: {response.text}")
+        error_message = response.text
+        try:
+            error = response.json()
+        except ValueError:
+            error = None
+        if isinstance(error, dict):
+            error.pop("contextId", None)
+            error_message = error.get("message") or json.dumps(error)
+        message = (
+            f"{response.status_code} Client Error: "
+            f"{response.reason} for path: {self.endpoint}"
+        )
+        raise exception_class(f'Msg {message}, response "{error_message}"')
+
+    def validate_response(self, response: requests.Response) -> None:
+        """Log client errors and exclude context IDs from the saved error."""
+        if 400 <= response.status_code < 500 and response.status_code != 429:
+            self._log_and_raise(FatalAPIError, response)
+        super().validate_response(response)
 
     @property
     def authenticator(self):
